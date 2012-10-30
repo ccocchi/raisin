@@ -13,7 +13,7 @@ module Raisin
       def verify_http_accept_header
         header = @env['HTTP_ACCEPT']
         if (matches = %r{application/vnd\.(?<vendor>[a-z]+)-(?<version>v[0-9]+)\+json}.match(header))
-          @options[:version] == matches[:version] ? true : false
+          @args.include?(matches[:version]) ? true : false
         else
           false
         end

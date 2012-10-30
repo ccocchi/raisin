@@ -1,5 +1,3 @@
-require 'rack/mount'
-
 module Raisin
   class API
     class << self
@@ -32,7 +30,7 @@ module Raisin
     #
     def self.mount(api)
       # api.route_into(route_set)
-      api.use Middleware::Header, version: @settings[:version].to_s if @settings[:version]
+      api.use_or_modify Middleware::Header, @settings[:version].to_s if @settings[:version]
       self.routes.concat api.routes
     end
 

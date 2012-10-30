@@ -1,9 +1,9 @@
 module Raisin
   module Middleware
     class Base
-      def initialize(app, options = {})
+      def initialize(app, *args)
         @app = app
-        @options = options
+        @args = args
       end
 
       def call(env)
