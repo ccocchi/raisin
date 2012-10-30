@@ -1,9 +1,8 @@
 module Raisin
   class MiddlewareStack < ActionDispatch::MiddlewareStack
     class Middleware < ActionDispatch::MiddlewareStack::Middleware
-      def update(arg)
-        debugger
-        @args << arg
+      def update(args)
+        @args = args
       end
     end
 
@@ -72,10 +71,13 @@ module Raisin
       @api_name ||= self.name.demodulize.sub(/api/i, '').underscore
     end
 
-    def self.use_or_modify(klass, *args)
-      debugger
-      versioner = middleware_stack.find { |m| m == klass }
-      versioner ? versioner.update(args.first) : self.use(klass, *args)
+    def self.use_or_update(klass, *args)
+      m = middleware_stack.find { |m| m == klass }
+      if m
+        m.update klass.merge(m.args, args)
+      else
+        self.use(klass, *args)
+      end
     end
 
     class << self

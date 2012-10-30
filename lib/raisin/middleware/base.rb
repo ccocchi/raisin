@@ -3,7 +3,6 @@ module Raisin
     class Base
       def initialize(app, *args)
         @app = app
-        @args = args
       end
 
       def call(env)
