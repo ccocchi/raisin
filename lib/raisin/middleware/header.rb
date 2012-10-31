@@ -24,6 +24,7 @@ module Raisin
       private
 
       def verify_http_accept_header
+        debugger
         header = @env['HTTP_ACCEPT']
         if (matches = %r{application/vnd\.(?<vendor>[a-z]+)-(?<version>v[0-9]+)(?<format>\+[a-z]+)?}.match(header))
           versions.include?(matches[:version]) &&

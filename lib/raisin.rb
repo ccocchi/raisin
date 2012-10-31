@@ -6,8 +6,9 @@ require 'raisin/middleware/header'
 require 'raisin/namespace'
 require 'raisin/endpoint'
 
-require 'raisin/api'
+require 'raisin/router'
 require 'raisin/base'
+require 'raisin/api'
 
 module Raisin
   # Your code goes here...

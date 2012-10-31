@@ -1,84 +1,177 @@
 module Raisin
+  class MiddlewareStack < ActionDispatch::MiddlewareStack
+    class Middleware < ActionDispatch::MiddlewareStack::Middleware
+      def update(args)
+        @args = args
+      end
+    end
+
+    def build(action, app=nil, &block)
+      super(app, &block)
+    end
+  end
+
   class API
-    class Version
-      attr_reader :version, :type, :options
+    class_attribute :middleware_stack
+    self.middleware_stack = Raisin::MiddlewareStack.new
 
-      def initialize(version, options = {})
-        @version = version.to_s
-        @type = options.delete(:using).try(:to_sym) || :header
-        @options = options
-
-        # validate!
+    def self.action(name, klass = ActionDispatch::Request)
+      middleware_stack.build(name) do |env|
+        self.const_get(name.capitalize).new.dispatch(:call, klass.new(env))
       end
+    end
 
-      private
-
-      def validate!
-        case type
-        when :header
-          raise 'Missing :vendor options when using header versionning' unless options.key?(:vendor)
-        end
-      end
+    def self.use(*args, &block)
+      middleware_stack.use(*args, &block)
     end
 
     def self.reset
-      @_current_version = nil
       @_routes = []
+      @_prefix = self.api_name
+      @_current_namespace = nil
     end
 
-    #
-    # Reset class variables on the subclass when inherited
-    #
     def self.inherited(subclass)
       subclass.reset
+      subclass.middleware_stack = self.middleware_stack.dup
+      super
     end
 
-    class << self
-      attr_internal_accessor :routes, :current_version
+    def self.api_name
+      @api_name ||= self.name.demodulize.sub(/api/i, '').underscore
+    end
 
-      def mount(api)
-        mount_version_middleware(api) if version?(:header)
-        self.routes.concat(version?(:path) ? pathed_routes(api.routes) : api.routes)
+    def self.use_or_update(klass, *args)
+      m = middleware_stack.find { |m| m == klass }
+      if m
+        m.update klass.merge(m.args, args)
+      else
+        self.use(klass, *args)
+      end
+    end
+
+    def self.routes
+      @_routes
+    end
+
+    module DSL
+      %w(get head post put delete).each do |via|
+        class_eval <<-EOF, __FILE__, __LINE__ + 1
+          def #{via}(path, options = nil, &block)
+            path = normalize_path(path)
+            method_name = extract_method_name(path, :#{via})
+
+            endpoint = Endpoint.new
+            endpoint.instance_eval(&block)
+
+            self.const_set method_name.capitalize.to_sym, Class.new(::Raisin::Base) {
+              define_method(:call, &(endpoint.response_body))
+            }
+
+            current_namespace.add(method_name) if current_namespace
+
+            routes << [:#{via}, path, default_route(method_name)]
+          end
+        EOF
       end
 
-      #
-      # Set version for current block
-      #
-      def version(version, options = {}, &block)
-        self.current_version = Version.new(version, options)
+      def prefix(prefix)
+        @_prefix = prefix
+      end
+
+      def prefix?
+        @_prefix
+      end
+
+      def description(desc)
+        # noop
+      end
+
+      def namespace(path, &block)
+        path = path.sub(%r(\A/?#{@_prefix}), '') if prefix?
+        old_namespace, @_current_namespace = current_namespace, Namespace.new(path)
         yield
-        self.current_version = nil
+        process_filters
+        @_current_namespace = old_namespace
       end
 
-      private
-
-      def mount_version_middleware(api)
-        api.use_or_update Middleware::Header, self.current_version.version, self.current_version.options
+      %w(before around after).each do |type|
+        class_eval <<-EOF, __FILE__, __LINE__ + 1
+          def #{type}(*args, &block)
+            return unless current_namespace
+            current_namespace.filter(:#{type}, args, &block)
+          end
+        EOF
       end
 
-      def version?(type)
-        self.current_version && self.current_version.type == type
-      end
+      protected
 
-      def pathed_routes(routes)
-        self.routes.map! { |via, path, opts|
-          path.append('/') unless path.start_with?('/')
-          path.append(current_version.version)
-          [via, path, opts]
+      def current_namespace
+        @_current_namespace
+      end
+      alias_method :current_namespace?, :current_namespace
+
+      def process_filters
+        current_namespace.filters.each_pair { |type, filters|
+          filters.each do |name, block|
+            superclass.send("#{type}_filter", name, only: current_namespace.methods, &block)
+          end
         }
       end
+
+      def default_route(method)
+        "#{modules_prefix}#{self.api_name}##{method}"
+      end
+
+      def modules_prefix
+        @modules_prefix ||= begin
+          modules = self.name.split('::').slice(0..-2)
+          modules.empty? ? '' : "#{modules.join('/')}/"
+        end
+      end
+
+      #
+      # Get method name from path
+      # Example:
+      #   / => :index
+      #   /users/:id => :users
+      #   /users/:id/addresses => :addresses
+      #
+      def extract_method_name(path, via)
+        return :index if path =~ %r(\A/?#{@_prefix}\z)
+
+        parts = path.split('/').reverse!
+
+        return parts.find { |part| !part.start_with?(':') } if parts.first != ':id'
+
+        case via
+        when :get
+          :show
+        when :post
+          :create
+        when :put
+          :update
+        when :delete
+          :destroy
+        else
+          raise "Cannot extract method name from #{path}"
+        end
+      end
+
+      #
+      # Creates path with version, namespace and
+      # given path, then normalizes it
+      #
+      def normalize_path(path)
+        parts = []
+        parts << @_prefix unless !prefix? || path =~ %r(\A/?#{@_prefix})
+        parts << current_namespace.path unless !current_namespace || path =~ %r(/#{current_namespace.path})
+        parts << path.to_s unless path == '/'
+        parts.join('/')
+      end
     end
 
-    # #
-    # # Make the API a rack endpoint
-    # #
-    # def self.call(env)
-    #   @_route_set.freeze unless @_route_set.frozen?
-    #   @_route_set.call(env)
-    # end
-
-    # Mount Raisin::Base into the api
-    #
+    extend DSL
 
   end
 end
