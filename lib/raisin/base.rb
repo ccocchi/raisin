@@ -42,11 +42,6 @@ module Raisin
       include mod
     }
 
-    # def self.inherited(subclass)
-    #   subclass.append_view_path "#{Rails.root}/app/views"
-    #   super
-    # end
-
     def self._expose(name, &block)
       if block_given?
         define_method(name) do |*args|
@@ -63,6 +58,14 @@ module Raisin
       end
 
       helper_method name
+    end
+
+    def self.controller_path
+      @controller_path ||= name && name.sub(/\:\:[^\:]+$/, '').sub(/api$/i, '').underscore
+    end
+
+    def action_name
+      self.class.name.demodulize.underscore
     end
 
     # class << self
