@@ -68,6 +68,12 @@ module Raisin
       self.class.name.demodulize.underscore
     end
 
+    #
+    # Avoid action mising and fallback to default rendering
+    #
+    def call
+    end
+
     # class << self
     #   attr_internal_reader :routes, :current_namespace
 

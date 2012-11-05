@@ -29,6 +29,17 @@ module Raisin
       @_routes = []
       @_prefix = self.api_name
       @_current_namespace = nil
+      @_klass  = Class.new(::Raisin::Base)
+
+      #
+      # Add before_filter to parent class to avoid same filters repeated
+      # across all action classes
+      #
+      if Configuration.enable_auth_by_default && Configuration.default_auth_method
+        @_klass.send(:before_filter, Configuration.default_auth_method)
+      end
+
+      @_klass.send(:respond_to, *Configuration.response_formats)
     end
 
     def self.inherited(subclass)
@@ -58,7 +69,6 @@ module Raisin
       %w(get head post put delete).each do |via|
         class_eval <<-EOF, __FILE__, __LINE__ + 1
           def #{via}(path = '/', options = nil, &block)
-            debugger
             path = normalize_path(path)
             method_name = extract_method_name(path, :#{via})
 
@@ -67,14 +77,19 @@ module Raisin
 
             n = current_namespace
 
-            self.const_set method_name.capitalize.to_sym, Class.new(::Raisin::Base) {
-              respond_to :json
-
+            klass = self.const_set method_name.capitalize.to_sym, Class.new(@_klass) {
               define_method(:call, &(endpoint.response_body))
 
               _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
               _expose(endpoint.exposure, &(endpoint.lazy_expose)) if endpoint.expose?
             }
+
+            if endpoint.auth_method
+              filter = Configuration.enable_auth_by_default ? :skip_before_filter : before_filter
+              klass.send(filter, endpoint.auth_method)
+            end
+
+            klass.send(:respond_to, *endpoint.formats) unless endpoint.formats.empty?
 
             current_namespace.add(method_name) if current_namespace
 
@@ -82,6 +97,12 @@ module Raisin
           end
         EOF
       end
+
+      #
+      # Delegate the filter to the parent class
+      #
+      # def before_filter(*args, *block)
+      # end
 
       def member(&block)
         namespace(':id') do
