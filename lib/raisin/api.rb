@@ -57,7 +57,8 @@ module Raisin
     module DSL
       %w(get head post put delete).each do |via|
         class_eval <<-EOF, __FILE__, __LINE__ + 1
-          def #{via}(path, options = nil, &block)
+          def #{via}(path = '/', options = nil, &block)
+            debugger
             path = normalize_path(path)
             method_name = extract_method_name(path, :#{via})
 
@@ -71,7 +72,7 @@ module Raisin
 
               define_method(:call, &(endpoint.response_body))
 
-              _expose(n.exposure, &(n.lazy_expose)) if n.expose?
+              _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
               _expose(endpoint.exposure, &(endpoint.lazy_expose)) if endpoint.expose?
             }
 
@@ -80,6 +81,14 @@ module Raisin
             routes << [:#{via}, path, default_route(method_name)]
           end
         EOF
+      end
+
+      def member(&block)
+        namespace(':id') do
+          resource = self.api_name.singularize
+          expose(resource) { resource.constantize.send :find, params[:id] }
+          instance_eval(&block)
+        end
       end
 
       def prefix(prefix)
