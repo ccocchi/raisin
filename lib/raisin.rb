@@ -3,6 +3,7 @@ require 'raisin/version'
 require 'raisin/middleware/base'
 require 'raisin/middleware/header'
 
+require 'raisin/exposable'
 require 'raisin/namespace'
 require 'raisin/endpoint'
 

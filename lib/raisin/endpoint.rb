@@ -1,5 +1,7 @@
 module Raisin
   class Endpoint
+    include Exposable
+
     attr_reader :response_body
 
     def initialize

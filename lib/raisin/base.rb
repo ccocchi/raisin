@@ -15,13 +15,14 @@ module Raisin
       def perform_caching=(*); end
       def helpers_path=(*); end
       def allow_forgery_protection=(*); end
-      def helper_method(*); end
-      def helper(*); end
+      # def helper_method(*); end
+      # def helper(*); end
     end
 
     extend Compatibility
 
     MODULES = [
+      AbstractController::Helpers,
       # ActionController::HideActions,
       ActionController::Rendering,
       # ActionController::Renderers::All
@@ -41,9 +42,27 @@ module Raisin
       include mod
     }
 
-    def self.inherited(subclass)
-      subclass.append_view_path "#{Rails.root}/app/views"
-      super
+    # def self.inherited(subclass)
+    #   subclass.append_view_path "#{Rails.root}/app/views"
+    #   super
+    # end
+
+    def self._expose(name, &block)
+      if block_given?
+        define_method(name) do |*args|
+          ivar = "@#{name}"
+
+          if instance_variable_defined?(ivar)
+            instance_variable_get(ivar)
+          else
+            instance_variable_set(ivar, instance_exec(block, *args, &block))
+          end
+        end
+      else
+        attr_reader name
+      end
+
+      helper_method name
     end
 
     # class << self

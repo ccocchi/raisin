@@ -64,8 +64,15 @@ module Raisin
             endpoint = Endpoint.new
             endpoint.instance_eval(&block)
 
+            n = current_namespace
+
             self.const_set method_name.capitalize.to_sym, Class.new(::Raisin::Base) {
+              respond_to :json
+
               define_method(:call, &(endpoint.response_body))
+
+              _expose(n.exposure, &(n.lazy_expose)) if n.expose?
+              _expose(endpoint.exposure, &(endpoint.lazy_expose)) if endpoint.expose?
             }
 
             current_namespace.add(method_name) if current_namespace
@@ -79,12 +86,12 @@ module Raisin
         @_prefix = prefix
       end
 
-      def prefix?
-        @_prefix
-      end
-
       def description(desc)
         # noop
+      end
+
+      def expose(*args, &block)
+        current_namespace.expose(*args, &block)
       end
 
       def namespace(path, &block)
@@ -105,6 +112,10 @@ module Raisin
       end
 
       protected
+
+      def prefix?
+        @_prefix
+      end
 
       def current_namespace
         @_current_namespace
