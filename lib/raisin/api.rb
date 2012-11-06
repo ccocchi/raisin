@@ -78,7 +78,7 @@ module Raisin
             n = current_namespace
 
             klass = self.const_set method_name.capitalize.to_sym, Class.new(@_klass) {
-              define_method(:call, &(endpoint.response_body))
+              define_method(:call, &(endpoint.response_body)) if endpoint.has_response?
 
               _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
               _expose(endpoint.exposure, &(endpoint.lazy_expose)) if endpoint.expose?

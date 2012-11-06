@@ -14,6 +14,10 @@ module Raisin
       @response_body = block
     end
 
+    def has_response?
+      !!response_body
+    end
+
     def desc(description)
       # noop
     end
