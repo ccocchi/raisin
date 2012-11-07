@@ -25,12 +25,13 @@ module Raisin
 
       def verify_http_accept_header
         header = @env['HTTP_ACCEPT']
-        if (matches = %r{application/vnd\.(?<vendor>[a-z]+)-(?<version>v[0-9]+)(?<format>\+[a-z]+)?}.match(header))
-          versions.include?(matches[:version]) &&
-           (!options.key?(:vendor) || options[:vendor] == matches[:vendor]) ? true : false
-        else
-          false
+        if (matches = %r{application/vnd\.(?<vendor>[a-z]+)-(?<version>v[0-9]+)\+(?<format>[a-z]+)?}.match(header)) &&
+            versions.include?(matches[:version]) && (!options.key?(:vendor) || options[:vendor] == matches[:vendor])
+
+          @env["action_dispatch.request.formats"] = [Mime::Type.lookup("application/#{matches[:format]}")]
+          return true
         end
+        false
       end
     end
   end
