@@ -29,6 +29,8 @@ module Raisin
       @_routes = []
       @_prefix = self.api_name
       @_current_namespace = nil
+      @_single_resource = false
+
       @_klass  = Class.new(::Raisin::Base)
 
       #
@@ -112,6 +114,11 @@ module Raisin
         end
       end
 
+      def single_resource
+        @_single_resource = true
+        @_prefix = @_prefix.singularize if prefix?
+      end
+
       def prefix(prefix)
         @_prefix = prefix
       end
@@ -144,7 +151,11 @@ module Raisin
       protected
 
       def prefix?
-        @_prefix
+        !!@_prefix
+      end
+
+      def single_resource?
+        !!@_single_resource
       end
 
       def current_namespace
@@ -167,7 +178,7 @@ module Raisin
       def modules_prefix
         @modules_prefix ||= begin
           modules = self.name.split('::').slice(0..-2)
-          modules.empty? ? '' : "#{modules.join('/')}/"
+          modules.empty? ? '' : "#{modules.map!(&:downcase).join('/')}/"
         end
       end
 
@@ -179,7 +190,11 @@ module Raisin
       #   /users/:id/addresses => :addresses
       #
       def extract_method_name(path, via)
-        return :index if path =~ %r(\A/?#{@_prefix}\z)
+        return method_name_for_single_resource(path, via) if single_resource?
+
+        if path =~ %r(\A/?#{@_prefix}\z)
+          return via == :get ? :index : :create
+        end
 
         parts = path.split('/').reverse!
 
@@ -188,14 +203,29 @@ module Raisin
         case via
         when :get
           :show
-        when :post
-          :create
         when :put
           :update
         when :delete
           :destroy
         else
           raise "Cannot extract method name from #{path}"
+        end
+      end
+
+      def method_name_for_single_resource(path, via)
+        if path =~ %r(\A/?#{@_prefix}\z)
+          case via
+          when :get
+            :show
+          when :post
+            :create
+          when :put
+            :update
+          when :delete
+            :destroy
+          end
+        else
+          path.split('/').reverse!.last
         end
       end
 
