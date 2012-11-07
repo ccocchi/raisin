@@ -1,5 +1,7 @@
 module Raisin
   class Namespace
+    include Exposable
+
     attr_reader :path, :methods, :filters
 
     def initialize(path)
