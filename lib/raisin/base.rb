@@ -66,6 +66,16 @@ module Raisin
       @controller_path ||= name && name.sub(/\:\:[^\:]+$/, '').sub(/api$/i, '').underscore
     end
 
+    #
+    # Remove nil prefixes from our anonymous classes
+    #
+    def _prefixes
+      @_prefixes ||= begin
+        parent_prefixes = self.class.parent_prefixes
+        parent_prefixes.compact.unshift(controller_path)
+      end
+    end
+
     def action_name
       self.class.name.demodulize.underscore
     end
@@ -76,12 +86,6 @@ module Raisin
     #
     def process(action, *args)
       super(:call, *args)
-    end
-
-    #
-    # Avoid action mising and fallback to default rendering
-    #
-    def call
     end
 
     # class << self

@@ -12,6 +12,16 @@ module Raisin
   end
 
   class API
+
+    #
+    # Dummy module to proxy `call` method in case
+    # it is not defined by subclasses
+    #
+    module CallMethod
+      def call
+      end
+    end
+
     class_attribute :middleware_stack
     self.middleware_stack = Raisin::MiddlewareStack.new
 
@@ -32,16 +42,18 @@ module Raisin
       @_single_resource = false
 
       @_klass  = Class.new(::Raisin::Base)
-      @_klass.send(:abstract!)
 
-      #
+      # Actions superclass needs to implement a default
+      # `call` method for implicit rendering
+      @_klass.send(:include, CallMethod)
+
       # Add before_filter to parent class to avoid same filters repeated
       # across all action classes
-      #
       if Configuration.enable_auth_by_default && Configuration.default_auth_method
         @_klass.send(:before_filter, Configuration.default_auth_method)
       end
 
+      # respond_to mimes are shared by all actions
       @_klass.send(:respond_to, *Configuration.response_formats)
     end
 
