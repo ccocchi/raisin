@@ -23,17 +23,19 @@ module Raisin
 
     MODULES = [
       AbstractController::Helpers,
-      # ActionController::HideActions,
+      ActionController::UrlFor,
       ActionController::Rendering,
       ActionController::Renderers::All,
-      ActionController::ImplicitRender,
 
       ActionController::ConditionalGet,
-      ActionController::MimeResponds,
 
       ActionController::RackDelegation,
+      ActionController::MimeResponds,
+      ActionController::ImplicitRender,
+      ActionController::DataStreaming,
 
       AbstractController::Callbacks,
+      ActionController::Rescue,
 
       ActionController::Instrumentation
     ]
