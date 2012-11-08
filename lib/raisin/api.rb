@@ -32,6 +32,7 @@ module Raisin
       @_single_resource = false
 
       @_klass  = Class.new(::Raisin::Base)
+      @_klass.send(:abstract!)
 
       #
       # Add before_filter to parent class to avoid same filters repeated
