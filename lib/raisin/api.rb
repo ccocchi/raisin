@@ -79,7 +79,7 @@ module Raisin
 
             n = current_namespace
 
-            klass = self.const_set method_name.capitalize.to_sym, Class.new(@_klass) {
+            klass = self.const_set method_name.camelize.to_sym, Class.new(@_klass) {
               define_method(:call, &(endpoint.response_body)) if endpoint.has_response?
 
               _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
@@ -193,7 +193,7 @@ module Raisin
         return method_name_for_single_resource(path, via) if single_resource?
 
         if path =~ %r(\A/?#{@_prefix}\z)
-          return via == :get ? :index : :create
+          return via == :get ? 'index' : 'create'
         end
 
         parts = path.split('/').reverse!
@@ -202,11 +202,11 @@ module Raisin
 
         case via
         when :get
-          :show
+          'show'
         when :put
-          :update
+          'update'
         when :delete
-          :destroy
+          'destroy'
         else
           raise "Cannot extract method name from #{path}"
         end
@@ -216,13 +216,13 @@ module Raisin
         if path =~ %r(\A/?#{@_prefix}\z)
           case via
           when :get
-            :show
+            'show'
           when :post
-            :create
+            'create'
           when :put
-            :update
+            'update'
           when :delete
-            :destroy
+            'destroy'
           end
         else
           path.split('/').reverse!.last

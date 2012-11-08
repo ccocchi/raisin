@@ -1,22 +1,28 @@
 module Raisin
   class Router
     class Version
+      ALL = 'all'
+
       attr_reader :version, :type, :options
 
       def initialize(version, options = {})
         @version = version.to_s
-        @type = options.delete(:using).try(:to_sym) || :header
-        @options = options
+        @type = options.delete(:using).try(:to_sym) || Configuration.version.using
+        @options = { vendor: Configuration.version.vendor }.merge!(options)
 
-        # validate!
+        validate!
       end
 
       private
 
       def validate!
+        raise 'Missing :using options for version' unless type
+
         case type
         when :header
-          raise 'Missing :vendor options when using header versionning' unless options.key?(:vendor)
+          raise 'Missing :vendor options when using header versionning' unless options[:vendor]
+        when :path
+          raise ':all cannot be used with path versionning' if version == ALL
         end
       end
     end

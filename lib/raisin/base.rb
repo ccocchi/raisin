@@ -25,7 +25,7 @@ module Raisin
       AbstractController::Helpers,
       # ActionController::HideActions,
       ActionController::Rendering,
-      # ActionController::Renderers::All
+      ActionController::Renderers::All,
       ActionController::ImplicitRender,
 
       ActionController::ConditionalGet,
@@ -66,6 +66,14 @@ module Raisin
 
     def action_name
       self.class.name.demodulize.underscore
+    end
+
+    #
+    # `call` is the only method to be processed. #process is not
+    # called in the normal process only in tests
+    #
+    def process(action, *args)
+      super(:call, *args)
     end
 
     #
