@@ -7,7 +7,7 @@ require 'raisin/configuration'
 
 require 'raisin/exposable'
 require 'raisin/namespace'
-require 'raisin/endpoint'
+require 'raisin/mixin'
 
 require 'raisin/router'
 require 'raisin/base'

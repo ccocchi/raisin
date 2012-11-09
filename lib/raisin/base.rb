@@ -45,21 +45,7 @@ module Raisin
     }
 
     def self._expose(name, &block)
-      if block_given?
-        define_method(name) do |*args|
-          ivar = "@#{name}"
 
-          if instance_variable_defined?(ivar)
-            instance_variable_get(ivar)
-          else
-            instance_variable_set(ivar, instance_exec(block, *args, &block))
-          end
-        end
-      else
-        attr_reader name
-      end
-
-      helper_method name
     end
 
     def self.controller_path
@@ -72,7 +58,7 @@ module Raisin
     def _prefixes
       @_prefixes ||= begin
         parent_prefixes = self.class.parent_prefixes
-        parent_prefixes.compact.unshift(controller_path)
+        parent_prefixes.compact.unshift(controller_path)#.map! { |pr| pr.split('/').last }
       end
     end
 

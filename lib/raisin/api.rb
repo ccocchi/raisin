@@ -12,21 +12,8 @@ module Raisin
   end
 
   class API
-
-    #
-    # Dummy module to proxy `call` method in case
-    # it is not defined by subclasses
-    #
-    module CallMethod
-      def call
-      end
-    end
-
     class_attribute :middleware_stack
     self.middleware_stack = Raisin::MiddlewareStack.new
-
-    class_attribute :helpers_module
-    self.helpers_module = Module.new
 
     def self.action(name, klass = ActionDispatch::Request)
       middleware_stack.build(name) do |env|
@@ -38,32 +25,35 @@ module Raisin
       middleware_stack.use(*args, &block)
     end
 
+    def self.action_klass
+      @_klass ||= begin
+        klass = Class.new(::Raisin::Base)
+        klass.send(:include, Raisin::Mixin)
+
+        if Configuration.enable_auth_by_default && Configuration.default_auth_method
+          klass.send(:before_filter, Configuration.default_auth_method)
+        end
+
+        klass.send(:respond_to, *Configuration.response_formats)
+        klass
+      end
+    end
+
+    def self.action_klass=(klass)
+      @_klass = klass
+    end
+
     def self.reset
       @_routes = []
       @_prefix = self.api_name
-      @_current_namespace = nil
+      @_namespaces = []
       @_single_resource = false
-
-      @_klass  = Class.new(::Raisin::Base)
-
-      # Actions superclass needs to implement a default
-      # `call` method for implicit rendering
-      @_klass.send(:include, CallMethod)
-
-      # Add before_filter to parent class to avoid same filters repeated
-      # across all action classes
-      if Configuration.enable_auth_by_default && Configuration.default_auth_method
-        @_klass.send(:before_filter, Configuration.default_auth_method)
-      end
-
-      # respond_to mimes are shared by all actions
-      @_klass.send(:respond_to, *Configuration.response_formats)
     end
 
     def self.inherited(subclass)
       subclass.reset
       subclass.middleware_stack = self.middleware_stack.dup
-      subclass.helpers_module = self.helpers_module.dup
+      subclass.action_klass = self.action_klass.dup
       super
     end
 
@@ -91,27 +81,8 @@ module Raisin
             path = normalize_path(path)
             method_name = extract_method_name(path, :#{via})
 
-            endpoint = Endpoint.new
-            endpoint.instance_eval(&block)
-
-            n = current_namespace
-
-            klass = self.const_set method_name.camelize.to_sym, Class.new(@_klass) {
-
-              define_method(:call, &(endpoint.response_body)) if endpoint.has_response?
-
-              _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
-              _expose(endpoint.exposure, &(endpoint.lazy_expose)) if endpoint.expose?
-            }
-
-            if endpoint.auth_method
-              filter = Configuration.enable_auth_by_default ? :skip_before_filter : before_filter
-              klass.send(filter, endpoint.auth_method)
-            end
-
-            klass.send(:respond_to, *endpoint.formats) unless endpoint.formats.empty?
-
-            klass.send(:include, self.helpers_module)
+            klass = self.const_set method_name.camelize.to_sym, Class.new(@_klass, &block)
+            klass.send(:expose, current_namespace.exposure, &(current_namespace.lazy_expose)) if current_namespace.try(:expose?)
 
             current_namespace.add(method_name) if current_namespace
 
@@ -121,21 +92,26 @@ module Raisin
       end
 
       def included(&block)
-        self.helpers_module.class_eval(&block) if block_given?
+        self.action_klass.class_eval(&block) if block_given?
       end
-
-      #
-      # Delegate the filter to the parent class
-      #
-      # def before_filter(*args, *block)
-      # end
 
       def member(&block)
         namespace(':id') do
           resource = self.api_name.singularize
-          expose(resource) { resource.constantize.send :find, params[:id] }
+          expose(resource) { resource.camelize.constantize.send :find, params[:id] }
           instance_eval(&block)
         end
+      end
+
+      def nested_into_resource(parent)
+        parent = parent.to_s
+        sing = parent.singularize
+        id = "#{sing}_id"
+
+        @_namespaces << Namespace.new("#{parent}/:#{id}")
+        current_namespace.expose(sing) { sing.camelize.constantize.send :find, params[id.to_sym]}
+        @_namespaces << Namespace.new(@_prefix)
+        @_prefix = nil
       end
 
       def single_resource
@@ -157,10 +133,10 @@ module Raisin
 
       def namespace(path, &block)
         path = path.sub(%r(\A/?#{@_prefix}), '') if prefix?
-        old_namespace, @_current_namespace = current_namespace, Namespace.new(path)
+        @_namespaces.push Namespace.new(path)
         yield
         process_filters
-        @_current_namespace = old_namespace
+        @_namespaces.pop
       end
 
       %w(before around after).each do |type|
@@ -183,9 +159,12 @@ module Raisin
       end
 
       def current_namespace
-        @_current_namespace
+        @_namespaces.at(0)
       end
-      alias_method :current_namespace?, :current_namespace
+
+      def current_namespace?
+        @_namespaces.length > 0
+      end
 
       def process_filters
         current_namespace.filters.each_pair { |type, filters|
@@ -260,7 +239,7 @@ module Raisin
       def normalize_path(path)
         parts = []
         parts << @_prefix unless !prefix? || path =~ %r(\A/?#{@_prefix})
-        parts << current_namespace.path unless !current_namespace || path =~ %r(/#{current_namespace.path})
+        parts.concat @_namespaces.reject { |n| path =~ %r(/#{n.path}) }.map!(&:path) if current_namespace?
         parts << path.to_s unless path == '/'
         parts.join('/')
       end
