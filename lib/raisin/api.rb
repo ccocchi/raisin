@@ -77,11 +77,11 @@ module Raisin
     module DSL
       %w(get head post put delete).each do |via|
         class_eval <<-EOF, __FILE__, __LINE__ + 1
-          def #{via}(path = '/', options = nil, &block)
+          def #{via}(path = '/', options = {}, &block)
             path = normalize_path(path)
-            method_name = extract_method_name(path, :#{via})
+            method_name = options.key?(:as) ? options[:as].to_s : extract_method_name(path, :#{via})
 
-            klass = self.const_set method_name.camelize.to_sym, Class.new(@_klass, &block)
+            klass = self.const_set method_name.camelize, Class.new(@_klass, &block)
             klass.send(:expose, current_namespace.exposure, &(current_namespace.lazy_expose)) if current_namespace.try(:expose?)
 
             current_namespace.add(method_name) if current_namespace
