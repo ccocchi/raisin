@@ -25,9 +25,12 @@ module Raisin
     class_attribute :middleware_stack
     self.middleware_stack = Raisin::MiddlewareStack.new
 
+    class_attribute :helpers_module
+    self.helpers_module = Module.new
+
     def self.action(name, klass = ActionDispatch::Request)
       middleware_stack.build(name) do |env|
-        self.const_get(name.capitalize).new.dispatch(:call, klass.new(env))
+        self.const_get(name.camelize).new.dispatch(:call, klass.new(env))
       end
     end
 
@@ -60,6 +63,7 @@ module Raisin
     def self.inherited(subclass)
       subclass.reset
       subclass.middleware_stack = self.middleware_stack.dup
+      subclass.helpers_module = self.helpers_module.dup
       super
     end
 
@@ -93,6 +97,7 @@ module Raisin
             n = current_namespace
 
             klass = self.const_set method_name.camelize.to_sym, Class.new(@_klass) {
+
               define_method(:call, &(endpoint.response_body)) if endpoint.has_response?
 
               _expose(n.exposure, &(n.lazy_expose)) if n && n.expose?
@@ -106,11 +111,17 @@ module Raisin
 
             klass.send(:respond_to, *endpoint.formats) unless endpoint.formats.empty?
 
+            klass.send(:include, self.helpers_module)
+
             current_namespace.add(method_name) if current_namespace
 
             routes << [:#{via}, path, default_route(method_name)]
           end
         EOF
+      end
+
+      def included(&block)
+        self.helpers_module.class_eval(&block) if block_given?
       end
 
       #
