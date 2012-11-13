@@ -8,8 +8,8 @@ Gem::Specification.new do |gem|
   gem.version       = Raisin::VERSION
   gem.authors       = ["ccocchi"]
   gem.email         = ["cocchi.c@gmail.com"]
-  gem.description   = %q{An opiniated micro-framework to easily build API on top of Rails}
-  gem.summary       = %q{An opiniated micro-framework to easily build API on top of Rails}
+  gem.description   = %q{An opiniated micro-framework to easily build elegant API on top of Rails}
+  gem.summary       = %q{An opiniated micro-framework to easily build elegant API on top of Rails}
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($/)

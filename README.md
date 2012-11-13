@@ -1,6 +1,6 @@
 # Raisin
 
-TODO: Write a gem description
+Elegant, modular and performant APIs in Rails
 
 ## Installation
 
@@ -18,7 +18,7 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Soon
 
 ## Contributing
 
