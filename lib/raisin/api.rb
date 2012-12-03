@@ -12,8 +12,8 @@ module Raisin
   end
 
   class API
-    class_attribute :middleware_stack
-    self.middleware_stack = Raisin::MiddlewareStack.new
+    cattr_accessor :middleware_stack
+    @@middleware_stack = Raisin::MiddlewareStack.new
 
     def self.action(name, klass = ActionDispatch::Request)
       middleware_stack.build(name) do |env|
@@ -51,10 +51,10 @@ module Raisin
     end
 
     def self.inherited(subclass)
+      super
       subclass.reset
       subclass.middleware_stack = self.middleware_stack.dup
       subclass.action_klass = self.action_klass.dup
-      super
     end
 
     def self.api_name
