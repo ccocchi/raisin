@@ -5,10 +5,6 @@ module Raisin
         @args = args
       end
     end
-
-    def build(action, app=nil, &block)
-      super(app, &block)
-    end
   end
 
   class API
@@ -16,7 +12,7 @@ module Raisin
     @@middleware_stack = Raisin::MiddlewareStack.new
 
     def self.action(name, klass = ActionDispatch::Request)
-      middleware_stack.build(name) do |env|
+      middleware_stack.build do |env|
         self.const_get(name.camelize).new.dispatch(:call, klass.new(env))
       end
     end
