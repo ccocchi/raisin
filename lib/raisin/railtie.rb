@@ -6,8 +6,5 @@ module Raisin
 
     # Force routes to be loaded if we are doing any eager load.
     config.before_eager_load { |app| app.reload_routes! }
-
-    initializer "raisin.initialize" do |app|
-    end
   end
 end

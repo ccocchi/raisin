@@ -1,7 +1,7 @@
 module Raisin
   module ApiFormat
     def formats
-      @env["action_dispatch.request.formats"] ||= @env['raisin.request.formats'] || super
+      @env["action_dispatch.request.formats"] ||= [Mime::Type.lookup('application/json')]
     end
   end
 end

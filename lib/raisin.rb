@@ -1,8 +1,5 @@
 require 'raisin/version'
 
-require 'raisin/middleware/base'
-require 'raisin/middleware/header'
-
 require 'raisin/configuration'
 
 require 'raisin/exposable'
