@@ -5,6 +5,8 @@ module Raisin
     attr_reader :path, :methods, :filters
 
     def initialize(path)
+      super
+
       @path = path
       @methods = []
       @filters = {

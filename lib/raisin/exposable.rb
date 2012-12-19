@@ -3,16 +3,19 @@ module Raisin
     extend ActiveSupport::Concern
 
     included do
-      attr_reader :exposure, :lazy_expose
+      attr_reader :exposures
+    end
+
+    def initialize(*args)
+      @exposures = []
     end
 
     def expose(name, &block)
-      @exposure = name
-      @lazy_expose = block
+      @exposures << [name, block]
     end
 
     def expose?
-      !!@exposure
+      !exposures.empty?
     end
   end
 end

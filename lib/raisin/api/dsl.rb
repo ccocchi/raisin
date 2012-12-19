@@ -7,7 +7,12 @@ module Raisin
           method_name = options.key?(:as) ? options[:as].to_s : extract_method_name(path, :#{via})
 
           klass = self.const_set method_name.camelize, Class.new(@_klass, &block)
-          klass.send(:expose, current_namespace.exposure, &(current_namespace.lazy_expose)) if current_namespace.try(:expose?)
+          
+          if current_namespace && current_namespace.expose?
+            current_namespace.exposures.each do |name, b|
+              klass.send(:expose, name, &b)
+            end
+          end
 
           current_namespace.add(method_name) if current_namespace
 
