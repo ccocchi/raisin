@@ -61,6 +61,13 @@ module Raisin
       self.class.name.demodulize.underscore
     end
 
+    #
+    # In test env, action is not :call. This is a bit of a hack
+    #
+    def process(action, *args)
+      super(:call, *args)
+    end
+
     ActiveSupport.run_load_hooks(:action_controller, self)
   end
 end

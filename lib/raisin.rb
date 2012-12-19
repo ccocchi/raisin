@@ -10,6 +10,9 @@ require 'raisin/router'
 require 'raisin/base'
 require 'raisin/api'
 
+require 'raisin/middleware'
+require 'raisin/version_constraint'
+
 module Raisin
   def self.configure
     yield Configuration if block_given?
