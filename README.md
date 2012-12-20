@@ -150,6 +150,14 @@ Raisin.configure do |c|
 end
 ```
 
+If you are using versionning via header, you also need to add a middleware to your application stack
+
+```ruby
+#config/application.rb
+
+config.middleware.use Raisin::Middleware
+```
+
 ## Contributing
 
 1. Fork it
