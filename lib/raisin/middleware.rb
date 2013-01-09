@@ -9,11 +9,8 @@ module Raisin
 
     def call(env)
       @env = env
-      if verify_accept_header
-        @app.call(@env)
-      else
-        [406, {}, []]
-      end
+      verify_accept_header
+      @app.call(@env)
     end
 
     private
