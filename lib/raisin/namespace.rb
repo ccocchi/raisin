@@ -1,15 +1,12 @@
 module Raisin
   class Namespace
-    include Exposable
-
-    attr_reader :path, :methods, :filters
+    attr_reader :path, :methods, :filters, :exposures
 
     def initialize(path)
-      super
-
-      @path = path
-      @methods = []
-      @filters = {
+      @path       = path
+      @methods    = []
+      @exposures  = []
+      @filters    = {
         before: [],
         after:  [],
         around: []
@@ -22,6 +19,14 @@ module Raisin
 
     def filter(type, *args, &block)
       @filters[type] << [args.first, block]
+    end
+
+    def expose(name, &block)
+      @exposures << [name, block]
+    end
+
+    def expose?
+      !exposures.empty?
     end
   end
 end

@@ -1,4 +1,8 @@
 module Raisin
+  #
+  # Middleware responsable to filter HTTP Accept header
+  # It stores version and format accepted by the client in the env.
+  #
   class Middleware
     ACCEPT_REGEXP = /application\/vnd\.(?<vendor>[a-z]+)-(?<version>v[0-9]+)\+(?<format>[a-z]+)?/
 

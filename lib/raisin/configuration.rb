@@ -9,14 +9,8 @@ module Raisin
   end
 
   module Configuration
-    mattr_accessor :enable_auth_by_default
-    @@enable_auth_by_default = false
-
-    mattr_accessor :default_auth_method
-    @@default_auth_method = :authenticate_user! # Devise FTW
-
-    mattr_accessor :response_formats
-    @@response_formats = [:json]
+    mattr_accessor :base_endpoint
+    @@base_endpoint = 'ApiEndpoint'
 
     def self.version
       @version_config ||= VersionConfig.new

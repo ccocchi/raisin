@@ -1,21 +1,18 @@
-require 'raisin/version_constraint'
+require 'raisin/routing'
 
 module ActionDispatch::Routing
   class Mapper
+    def api_version(version)
+      version = version.to_s
+      mounter = Raisin::Routing::Mounter.new(version)
 
-    #
-    #
-    #
-    def mount_api(raisin_api)
-      raisin_api.versions.each do |version, routes|
-        next if routes.empty?
+      yield mounter
 
-        send(:constraints, Raisin::VersionConstraint.new(version)) {
-          routes.each do |method, path, endpoint|
-            send(method, path, to: endpoint)
-          end
-        }
-      end
+      send(:constraints, Raisin::Routing::VersionConstraint.new(version)) do
+        mounter.routes.each do |method, path, endpoint|
+          send(method, path, to: endpoint)
+        end
+      end unless mounter.routes.empty?
     end
   end
 

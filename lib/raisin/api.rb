@@ -1,4 +1,4 @@
-require 'raisin/api/dsl'
+require 'raisin/dsl/api'
 
 module Raisin
   class API
@@ -9,30 +9,6 @@ module Raisin
     #
     def self.action(name, klass = ActionDispatch::Request)
       ->(env) { self.const_get(name.camelize).new.dispatch(:call, klass.new(env)) }
-    end
-
-    #
-    # The abstract class that is inherited by all actions.
-    #
-    # It includes actions DSL, default call method, global authentication
-    # filter and global respond_to
-    #
-    def self.action_klass
-      @_klass ||= begin
-        klass = Class.new(::Raisin::Base)
-        klass.send(:include, Raisin::Mixin)
-
-        if Configuration.enable_auth_by_default && Configuration.default_auth_method
-          klass.send(:before_filter, Configuration.default_auth_method)
-        end
-
-        klass.send(:respond_to, *Configuration.response_formats)
-        klass
-      end
-    end
-
-    def self.action_klass=(klass) # :nodoc:
-      @_klass = klass
     end
 
     #
@@ -53,7 +29,6 @@ module Raisin
     def self.inherited(subclass)
       super
       subclass.reset
-      subclass.action_klass = self.action_klass.dup
     end
 
     #
@@ -69,6 +44,6 @@ module Raisin
       @_routes
     end
 
-    extend Raisin::DSL
+    extend DSL::Api
   end
 end
