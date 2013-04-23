@@ -9,9 +9,6 @@ module Raisin
   end
 
   module Configuration
-    mattr_accessor :base_endpoint
-    @@base_endpoint = 'ApiEndpoint'
-
     def self.version
       @version_config ||= VersionConfig.new
     end

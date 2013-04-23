@@ -2,8 +2,6 @@ require 'raisin/version'
 require 'raisin/configuration'
 
 require 'raisin/base'
-require 'raisin/api'
-
 require 'raisin/middleware'
 
 module Raisin
