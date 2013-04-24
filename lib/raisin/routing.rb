@@ -1,5 +1,7 @@
 module Raisin
   module Routing
+    ALL_VERSIONS = 'all'
+
     class VersionConstraint
       def initialize(version, is_default)
         @version  = version
