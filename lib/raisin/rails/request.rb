@@ -13,7 +13,7 @@ module Raisin
         else
           [Mime::HTML]
         end
-    end
+    end    
   end
 end
 
