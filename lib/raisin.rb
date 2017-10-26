@@ -1,13 +1,19 @@
 require 'raisin/version'
-require 'raisin/configuration'
-
-require 'raisin/base'
+require 'raisin/mapper'
 require 'raisin/middleware'
+
+require 'raisin/railtie' if defined?(Rails)
 
 module Raisin
   def self.configure
-    yield Configuration if block_given?
+    yield self
+  end
+
+  def self.vendor
+    @vendor || raise('`vendor` is not configured')
+  end
+
+  def self.vendor=(value)
+    @vendor = value
   end
 end
-
-require 'raisin/railtie'

@@ -3,17 +3,23 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'raisin/version'
 
-Gem::Specification.new do |gem|
-  gem.name          = "raisin"
-  gem.version       = Raisin::VERSION
-  gem.authors       = ["ccocchi"]
-  gem.email         = ["cocchi.c@gmail.com"]
-  gem.description   = %q{An opiniated micro-framework to easily build elegant API on top of Rails}
-  gem.summary       = %q{An opiniated micro-framework to easily build elegant API on top of Rails}
-  gem.homepage      = "https://github.com/ccocchi/raisin"
+Gem::Specification.new do |s|
+  s.name          = "raisin"
+  s.version       = Raisin::VERSION
+  s.platform      = Gem::Platform::RUBY
+  s.authors       = ["ccocchi"]
+  s.email         = ["cocchi.c@gmail.com"]
+  s.description   = %q{API versioning via the Accept header}
+  s.summary       = %q{Build API with Accept header versioning on top of Rails}
+  s.homepage      = "https://github.com/ccocchi/raisin"
+  s.license       = 'MIT'
 
-  gem.files         = `git ls-files`.split($/)
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
-  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
-  gem.require_paths = ["lib"]
+  s.required_ruby_version     = '>= 2.2.0'
+
+  s.files         = `git ls-files`.split("\n")
+  s.test_files    = `git ls-files -- test/*`.split("\n")
+  s.require_paths = ["lib"]
+
+  s.add_dependency 'actionpack', '~> 5.0'
+  s.add_dependency 'activesupport', '~> 5.0'
 end
